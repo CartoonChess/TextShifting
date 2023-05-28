@@ -7,6 +7,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            class Coordinate {
+                constructor(column, line) {
+                    this.column = column;
+                    this.line = line;
+                }
+                // possibly provide some func/prop that provides .leftOfMe
+            }
+
+            class Surroundings {
+                constructor(lines, coordinate) {
+                    const x = coordinate.column;
+                    const y = coordinate.line;
+                    this.here = lines[y][x];
+                    this.up = lines[y - 1][x];
+                    this.down = lines[y + 1][x];
+                    this.left = lines[y][x - 1];
+                    this.right = lines[y][x + 1];
+                }
+                toString() {
+                    return ` ${this.up} \n${this.left}${this.here}${this.right}\n ${this.down} `;
+                }
+            }
+
             function generateArrays(numberOfElements) {
                 const arrays = [];
 
@@ -18,7 +41,7 @@
 
                         if (randomNumber < 0.65) {
                             // Space gets eaten by one of the commands... join?
-                            character = '_';
+                            character = ' ';
                         } else if (randomNumber < 0.8) {
                             character = '.';
                         } else if (randomNumber < 0.95) {
@@ -31,7 +54,6 @@
 
                         array.push(character);
                     }
-
                     arrays.push(array);
                 }
                 return arrays;
@@ -43,22 +65,30 @@
             var currentPosition = 0;
             var numberOfLines = 9;
             var numberOfColumns = 9;
+            const playerPosition = new Coordinate(Math.floor(numberOfColumns / 2), Math.floor(numberOfLines / 2));
 
-            function setCharAt(str, index, chr) {
+            function replaceCharAt(index, chr, str) {
+                // If called as a func of string, operate on copy of String itself
+                if (!str) {str = this;}
                 if (index > str.length - 1) return str;
                 return str.substring(0, index) + chr + str.substring(index + 1);
             }
+            // Add this as a method on String
+            String.prototype.replaceCharAt = replaceCharAt;
 
             function updateText() {
+                const lines = [];
                 for (let i = 0; i < numberOfLines; i++) {
-                    var line = arrays[topArrayIndex + i].slice(currentPosition, currentPosition + numberOfColumns).join('');
-                    updateConsole(line);
-                    // Show @ char at centre of both axes
-                    if (i === Math.floor(numberOfLines / 2)) {
-                        line = setCharAt(line, Math.floor(numberOfColumns / 2), '@');
+                    lines[i] = arrays[topArrayIndex + i].slice(currentPosition, currentPosition + numberOfColumns).join('');
+                    // Show @char at centre of both axes
+                    if (i === playerPosition.line) {
+                        lines[i] = lines[i].replaceCharAt(playerPosition.line, '@');
                     }
-                    document.getElementById(`line${i}`).textContent = line;
+                    document.getElementById(`line${i}`).textContent = lines[i];
                 }
+                const playerSurroundings = new Surroundings(lines, playerPosition);
+                // updateConsole(` ${playerSurroundings.up}\n${playerSurroundings.left}${playerSurroundings.here}${playerSurroundings.right}\n ${playerSurroundings.down}`);
+                updateConsole(playerSurroundings);
             }
 
             function shiftRight() {
@@ -112,7 +142,7 @@
             // Ignore swipes so page won't move
             // Except this doesn't actually work
             // document.addEventListener("touchmove", function (event) {
-            //     event.preventDefault();
+            //     event.codeventDefault();
             // });
 
             // Now the actual swipes
@@ -158,10 +188,6 @@
             /* Disable touch events */
         }
 
-        div {
-            font-family: monospace;
-        }
-
         #console {
             margin-top: 15px;
             padding: 5px;
@@ -169,7 +195,7 @@
             color: #ffffff;
         }
 
-        @media (prefers-color-scheme: dark) {
+        @media (codefers-color-scheme: dark) {
 
             html,
             body {
@@ -181,17 +207,19 @@
 </head>
 
 <body>
-    <div id="line0"></div>
-    <div id="line1"></div>
-    <div id="line2"></div>
-    <div id="line3"></div>
-    <div id="line4"></div>
-    <div id="line5"></div>
-    <div id="line6"></div>
-    <div id="line7"></div>
-    <div id="line8"></div>
+    <pre>
+        <code id="line0"></code>
+        <code id="line1"></code>
+        <code id="line2"></code>
+        <code id="line3"></code>
+        <code id="line4"></code>
+        <code id="line5"></code>
+        <code id="line6"></code>
+        <code id="line7"></code>
+        <code id="line8"></code>
+    </pre>
 
-    <div id="console"></div>
+    <pre id="console"></pre>
 </body>
 
 </html>
