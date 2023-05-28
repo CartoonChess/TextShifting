@@ -15,8 +15,30 @@
                 // possibly provide some func/prop that provides .leftOfMe
             }
 
+            class Direction {
+                static Up = new Direction("up")
+                static Down = new Direction("down")
+                static Left = new Direction("left")
+                static Right = new Direction("right")
+
+                constructor(name) {
+                    this.name = name
+                }
+            }
+
             class Surroundings {
                 constructor(lines, coordinate) {
+                    if (lines && coordinate) {
+                        this.update(lines, coordinate);
+                    } else {
+                        this.here = ' ';
+                        this.up = ' ';
+                        this.down = ' ';
+                        this.left = ' ';
+                        this.right = ' ';
+                    }
+                }
+                update(lines, coordinate) {
                     const x = coordinate.column;
                     const y = coordinate.line;
                     this.here = lines[y][x];
@@ -40,7 +62,6 @@
                         let character;
 
                         if (randomNumber < 0.65) {
-                            // Space gets eaten by one of the commands... join?
                             character = ' ';
                         } else if (randomNumber < 0.8) {
                             character = '.';
@@ -59,13 +80,20 @@
                 return arrays;
             }
 
-            var numberOfElements = 30;
+
+            // Full map
+            var numberOfElements = 29;
             var arrays = generateArrays(numberOfElements);
-            var topArrayIndex = 0;
-            var currentPosition = 0;
+            const mapCenter = new Coordinate(Math.floor(numberOfElements / 2), Math.floor(numberOfElements / 2));
+            // Screen area
             var numberOfLines = 9;
             var numberOfColumns = 9;
-            const playerPosition = new Coordinate(Math.floor(numberOfColumns / 2), Math.floor(numberOfLines / 2));
+            const screenCenter = new Coordinate(Math.floor(numberOfColumns / 2), Math.floor(numberOfLines / 2));
+            // Current view
+            var topArrayIndex = mapCenter.line - screenCenter.line;
+            var currentPosition = mapCenter.column - screenCenter.column;
+            const playerPosition = screenCenter; // syntactic sugar
+            var playerSurroundings = new Surroundings();
 
             function replaceCharAt(index, chr, str) {
                 // If called as a func of string, operate on copy of String itself
@@ -86,34 +114,57 @@
                     }
                     document.getElementById(`line${i}`).textContent = lines[i];
                 }
-                const playerSurroundings = new Surroundings(lines, playerPosition);
-                // updateConsole(` ${playerSurroundings.up}\n${playerSurroundings.left}${playerSurroundings.here}${playerSurroundings.right}\n ${playerSurroundings.down}`);
+                playerSurroundings.update(lines, playerPosition);
                 updateConsole(playerSurroundings);
             }
 
+            function canMove(direction) {
+                switch (direction) {
+                    case Direction.Up: {
+                        return topArrayIndex > 0 && playerSurroundings.up != ';';
+                        break;
+                    }
+                    case Direction.Down: {
+                        return topArrayIndex + numberOfLines < arrays.length && playerSurroundings.down != ';';
+                        break;
+                    }
+                    case Direction.Left: {
+                        return currentPosition > 0 && playerSurroundings.left != ';';
+                        break;
+                    }
+                    case Direction.Right: {
+                        return currentPosition < numberOfElements - numberOfColumns && playerSurroundings.right != ';';
+                        break;
+                    }
+                    default: {
+                        // this should never happen
+                    }
+                }
+            }
+
             function shiftRight() {
-                if (currentPosition < numberOfElements - numberOfColumns) {
+                if (canMove(Direction.Right)) {
                     currentPosition++;
                     updateText();
                 }
             }
 
             function shiftLeft() {
-                if (currentPosition > 0) {
+                if (canMove(Direction.Left)) {
                     currentPosition--;
                     updateText();
                 }
             }
 
             function switchArrayUp() {
-                if (topArrayIndex > 0) {
+                if (canMove(Direction.Up)) {
                     topArrayIndex--;
                     updateText();
                 }
             }
 
             function switchArrayDown() {
-                if (topArrayIndex + numberOfLines < arrays.length) {
+                if (canMove(Direction.Down)) {
                     topArrayIndex++;
                     updateText();
                 }
